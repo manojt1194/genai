@@ -82,13 +82,14 @@
 #     }
 
 from fastapi import APIRouter, HTTPException, status
-from models import Message, ChatRequest, SummarizeRequest
+from models import Message, ChatRequest, SummarizeRequest, MemoryChatRequest
 from services import (
     greet_user,
     dummy_summary,
     square_number,
     divide_numbers,
     call_local_llm,
+    chat_with_memory,
 )
 
 router = APIRouter()
@@ -117,9 +118,30 @@ def add(a: int, b: int):
 
 @router.post("/chat")
 def chat(message: Message):
-    # Lesson 8: now this uses the local model
-    answer = call_local_llm(message.text)
+    messages = [
+        {
+            "role": "system",
+            "content": "You are a helpful assistant."
+        },
+        {
+            "role": "user",
+            "content": message.text
+        }
+    ]
+
+    answer = call_local_llm(messages)
+
     return {
+        "answer": answer
+    }
+
+
+@router.post("/memory-chat")
+def memory_chat(request: MemoryChatRequest):
+    answer = chat_with_memory(request.session_id, request.message)
+
+    return {
+        "session_id": request.session_id,
         "answer": answer
     }
 
@@ -127,10 +149,19 @@ def chat(message: Message):
 @router.post("/personal-chat", status_code=status.HTTP_200_OK)
 def personal_chat(request: ChatRequest):
     prompt = f"User name is {request.name}. User message: {request.message}"
-    answer = call_local_llm(
-        prompt,
-        system_prompt="You are a friendly Python tutor."
-    )
+    messages = [
+        {
+            "role": "system",
+            "content": "You are a friendly Python tutor."
+        },
+        {
+            "role": "user",
+            "content": prompt
+        }
+    ]
+
+    answer = call_local_llm(messages)
+
     return {
         "reply": answer
     }
@@ -138,11 +169,19 @@ def personal_chat(request: ChatRequest):
 
 @router.post("/summarize", status_code=status.HTTP_200_OK)
 def summarize(request: SummarizeRequest):
-    prompt = f"Summarize this text in 3 bullet points:\n\n{request.text}"
-    answer = call_local_llm(
-        prompt,
-        system_prompt="You are a concise summarization assistant."
-    )
+    messages = [
+        {
+            "role": "system",
+            "content": "You are a concise summarization assistant. Summarize in 3 bullet points."
+        },
+        {
+            "role": "user",
+            "content": request.text
+        }
+    ]
+
+    answer = call_local_llm(messages)
+
     return {
         "summary": answer,
         "original_length": len(request.text)
@@ -178,6 +217,6 @@ def divide(a: float, b: float):
 @router.get("/about")
 def about():
     return {
-        "name": "Sneh's GenAI App",
+        "name": "Amex's GenAI App",
         "version": "1.0"
     }

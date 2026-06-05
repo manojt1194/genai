@@ -24,6 +24,10 @@ import requests
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gemma3")
 
+# In-memory chat history for learning purposes
+# This resets when the server restarts.
+CHAT_MEMORY = {}
+
 
 def greet_user(name: str, message: str) -> str:
     return f"Hello {name}, you said: {message}"
@@ -45,14 +49,11 @@ def divide_numbers(a: float, b: float) -> float:
     return a / b
 
 
-def call_local_llm(user_message: str, system_prompt: str = "You are a helpful assistant.") -> str:
+def call_local_llm(messages: list) -> str:
     url = f"{OLLAMA_BASE_URL}/api/chat"
     payload = {
         "model": OLLAMA_MODEL,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_message},
-        ],
+        "messages": messages,
         "stream": False,
     }
 
@@ -61,3 +62,33 @@ def call_local_llm(user_message: str, system_prompt: str = "You are a helpful as
     data = response.json()
 
     return data["message"]["content"]
+
+
+def chat_with_memory(session_id: str, user_message: str) -> str:
+    if session_id not in CHAT_MEMORY:
+        CHAT_MEMORY[session_id] = [
+            {
+                "role": "system",
+                "content": "You are a helpful assistant. Remember the conversation and answer using context."
+            }
+        ]
+
+    CHAT_MEMORY[session_id].append(
+        {
+            "role": "user",
+            "content": user_message
+        }
+    )
+
+    answer = call_local_llm(CHAT_MEMORY[session_id])
+
+    CHAT_MEMORY[session_id].append(
+        {
+            "role": "assistant",
+            "content": answer
+        }
+    )
+    
+    print(CHAT_MEMORY)
+
+    return answer

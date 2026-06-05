@@ -28,3 +28,7 @@ class ChatRequest(BaseModel):
 
 class SummarizeRequest(BaseModel):
     text: str = Field(..., min_length=10, max_length=5000)
+    
+class MemoryChatRequest(BaseModel):
+    session_id: str = Field(..., min_length=1, max_length=100)
+    message: str = Field(..., min_length=1, max_length=1000)
