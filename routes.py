@@ -91,6 +91,7 @@ from services import (
     call_local_llm,
     chat_with_memory,
 )
+from prompts.summarizer import build_summarization_prompt
 
 router = APIRouter()
 
@@ -169,6 +170,9 @@ def personal_chat(request: ChatRequest):
 
 @router.post("/summarize", status_code=status.HTTP_200_OK)
 def summarize(request: SummarizeRequest):
+   
+    prompt = build_summarization_prompt(request.text)
+
     messages = [
         {
             "role": "system",
@@ -176,7 +180,7 @@ def summarize(request: SummarizeRequest):
         },
         {
             "role": "user",
-            "content": request.text
+            "content": prompt
         }
     ]
 
