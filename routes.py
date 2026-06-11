@@ -81,7 +81,10 @@
 #         "version": "1.0"
 #     }
 
+from pathlib import Path
+
 from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import FileResponse
 from models import Message, ChatRequest, SummarizeRequest, MemoryChatRequest
 from services import (
     greet_user,
@@ -93,11 +96,20 @@ from services import (
 )
 from prompts.summarizer import build_summarization_prompt
 
+BASE_DIR = Path(__file__).resolve().parent
+STATIC_DIR = BASE_DIR / "static"
+INDEX_FILE = STATIC_DIR / "index.html"
+
 router = APIRouter()
 
 
 @router.get("/")
 def home():
+    return FileResponse(INDEX_FILE)
+
+
+@router.get("/api")
+def api_root():
     return {
         "message": "Welcome to my GenAI learning journey"
     }
